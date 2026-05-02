@@ -1,0 +1,19 @@
+# ─────────────────────────────────────────────────────────────
+# Water Quality MQTT Subscriber — Dockerfile
+# ─────────────────────────────────────────────────────────────
+
+FROM python:3.10-slim
+
+# Non-root user for security
+RUN groupadd -r appuser && useradd --no-log-init -r -g appuser appuser
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY subscriber/ ./subscriber/
+
+USER appuser
+
+CMD ["python", "-u", "-m", "subscriber.main"]

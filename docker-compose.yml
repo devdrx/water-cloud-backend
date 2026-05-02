@@ -1,0 +1,96 @@
+# ==========================================================================
+# Water Quality Cloud Backend — Docker Compose (Production-Hardened)
+# ==========================================================================
+# Copy .env.example → .env and customise before running:
+#   docker compose up --build -d
+# ==========================================================================
+
+services:
+
+  # ── TimescaleDB ────────────────────────────────────────────────────────
+  db:
+    image: timescale/timescaledb:latest-pg14
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # ── MQTT Broker (auth-enabled) ─────────────────────────────────────────
+  mosquitto:
+    build:
+      context: ./mosquitto
+    ports:
+      - "11883:1883"    # host 11883 → container 1883 (1823-1922 blocked by Hyper-V)
+      - "9001:9001"
+    environment:
+      MQTT_USER: ${MQTT_USER}
+      MQTT_PASSWORD: ${MQTT_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_pub -h localhost -u $$MQTT_USER -P $$MQTT_PASSWORD -t healthcheck -m ok 2>/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  # ── MQTT Subscriber ────────────────────────────────────────────────────
+  mqtt_subscriber:
+    build:
+      context: .
+      dockerfile: Dockerfile.subscriber
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+      mosquitto:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── FastAPI ────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "8000:8000"
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ── Grafana ────────────────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    env_file: .env
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  grafana_data:
