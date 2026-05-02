@@ -32,7 +32,7 @@ The system is the backend for two companion research papers:
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                        ZONE 1 — Sensing Layer                       │
-│   Arduino Uno  ←  pH, DO, EC, Turbidity, Temp, NH3, Flow sensors   │
+│   Arduino Uno  ←  pH, DO, EC, Turbidity, Temp, NH3, Flow sensors    │
 └───────────────────────────┬─────────────────────────────────────────┘
                             │ UART / I2C
 ┌───────────────────────────▼─────────────────────────────────────────┐
@@ -43,23 +43,23 @@ The system is the backend for two companion research papers:
 │   • Hybrid ensemble classification (A–E)                            │
 │   • TreeSHAP feature attribution                                    │
 │   • YOLOv8 river depth estimation (Cloud 2)                         │
-│   • 35 ms inference latency, < 2.5 W power                         │
+│   • 35 ms inference latency, < 2.5 W power                          │
 └───────────────────────────┬─────────────────────────────────────────┘
                             │ MQTT (4G/LTE/Wi-Fi)
 ┌───────────────────────────▼─────────────────────────────────────────┐
 │               ZONE 3 — Cloud Integration (this repo)                │
 │                                                                     │
-│   ┌──────────┐   ┌───────────────┐   ┌──────────────┐              │
-│   │Mosquitto │──▶│MQTT Subscriber│──▶│ TimescaleDB  │              │
-│   │(Auth)    │   │(Retry+Alerts) │   │ (Hypertable) │              │
-│   └──────────┘   └───────────────┘   └──────┬───────┘              │
+│   ┌──────────┐   ┌───────────────┐   ┌──────────────┐               │
+│   │Mosquitto │──▶│MQTT Subscriber│──▶│ TimescaleDB │               │
+│   │(Auth)    │   │(Retry+Alerts) │   │ (Hypertable) │               │
+│   └──────────┘   └───────────────┘   └──────┬───────┘               │
 │                                             │                       │
 │                        ┌────────────────────┼────────────┐          │
 │                        │                    │            │          │
-│                   ┌────▼────┐         ┌─────▼─────┐  ┌──▼───┐      │
-│                   │ FastAPI │         │  Grafana   │  │Alerts│      │
-│                   │ (Async) │         │ Dashboard  │  │(SMTP)│      │
-│                   └─────────┘         └───────────┘  └──────┘      │
+│                   ┌────▼────┐         ┌─────▼─────┐  ┌──▼───┐       │
+│                   │ FastAPI │         │  Grafana  │  │Alerts│       │
+│                   │ (Async) │         │ Dashboard │  │(SMTP)│       │
+│                   └─────────┘         └───────────┘  └──────┘       │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
